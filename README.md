@@ -18,7 +18,6 @@ Website ini dirancang untuk:
 ---
 
 ## 🧠 Teknologi yang Digunakan
-
 | Komponen | Teknologi |
 |-----------|------------|
 | Backend | Laravel 12+ |
