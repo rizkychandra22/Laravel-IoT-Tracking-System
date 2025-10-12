@@ -1,8 +1,10 @@
 ## 🚗 LaraTrack-IoT WebApp
 
-LaraTrack merupakan website sistem **pelacakan kendaraan berbasis IoT (Internet of Things)**.  
-Perangkat **ESP32** yang terhubung dengan **GPS Module (NEO-6M)** akan mengirimkan data lokasi kendaraan secara **real-time** ke server.  
+LaraTrack merupakan website sistem **pelacakan kendaraan berbasis IoT (Internet of Things)**. Perangkat **ESP32** yang terhubung dengan **GPS Module (NEO-6M)** akan mengirimkan data lokasi kendaraan secara **real-time** ke server.  
+
 Data tersebut divisualisasikan dalam bentuk **peta interaktif** menggunakan API **Google Maps** di website berbasis **Laravel**.
+
+### ✨ **Dikembangkan oleh:** <a href="https://www.instagram.com/_chndr_22/" target="_blank"> *Rizky Chandra Khusuma* </a>
 
 ---
 
@@ -19,19 +21,20 @@ Website ini dirancang untuk:
 
 | Komponen | Teknologi |
 |-----------|------------|
-| IoT Device | ESP32 + GPS Module |
 | Backend | Laravel 12+ |
 | Database | MySQL |
-| Frontend | Bootstrap 5 / TailwindCSS |
+| Frontend | Blade Template + Bootstrap 4 |
+| IoT Device | ESP32 + GPS Module |
 | Map Integration | Google Maps API |
-| Komunikasi IoT | HTTP / MQTT |
 | Realtime Update | AJAX |
+| Server | PHP 8.2+, Composer |
+| Tools Tambahan | GuzzleHTTP, Laravel HTTP Client, Ngrok |
 
 ---
 
 ## ⚙️ Langkah-Langkah Instalasi & Menjalankan Project
 
-Pastikan sudah menginstal **Git**, lalu jalankan:
+Pastikan sudah menginstal **Composer** dan **Git**, lalu jalankan:
 ### 1️⃣ Clone Repository
 ```bash
 git clone https://github.com/rizkychandra22/Laravel-IoT-Tracking-System.git
@@ -51,7 +54,18 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 ```
-### 5️⃣ Jalankan Server Lokal
+### 5️⃣ Konfigurasi Google Maps API
+Tambahkan konfigurasi berikut dan sesuaikan dengan **Google Maps API**
+```bash
+GOOGLE_MAPS_API_KEY=your-api-key-here
+```
+Atau secara langsung menggunakan script
+```bash
+<script async
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
+</script>
+```
+### 6️⃣ Jalankan Server Lokal
 ```bash
 php artisan serve
 ```
