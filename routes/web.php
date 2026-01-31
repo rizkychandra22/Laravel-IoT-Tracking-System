@@ -6,6 +6,10 @@ use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
+
+Route::get('/register', function () {
+    return view('register');
+})->name('register');
 // ========== AUTH ========== //
 Route::get('/login', [LoginController::class, 'index'])->name('view.login');
 Route::post('/login', [LoginController::class, 'login'])->name('login');
@@ -24,11 +28,20 @@ Route::get('/tracking/update', [TrackingController::class, 'storeLocation'])->na
 Route::get('/tracking/latest', [TrackingController::class, 'getLocation'])->name('getLocation');
 Route::get('/tracking/json', [TrackingController::class, 'ajaxTrackingJSON'])->name('ajaxTrackingJSON');
 
+// Algoritma Dijkstra
+Route::get('/tracking/dijkstra', [TrackingController::class, 'dijkstraRoute']);
+
 // CRUD admin user (butuh auth)
 Route::middleware(['auth', 'userAkses:Admin'])->prefix('dashboard/admin')->group(function () {
     Route::get('/data/user', [AdminUserController::class, 'adminDataUser'])->name('adminDataUser');
     Route::get('/create/user', [AdminUserController::class, 'adminCreateUser'])->name('adminCreateUser');
-    Route::post('/store/user', [AdminUserController::class, 'adminStoreUser'])->name('adminStoreUser');
+    Route::get('/register', function () {
+    return view('auth.register');
+})->name('register');
+
+Route::post('/register', [AdminUserController::class, 'adminStoreUser'])
+    ->name('register.store');
+
     Route::get('/edit/user/{id}', [AdminUserController::class, 'adminEditUser'])->name('adminEditUser');
     Route::post('/update/user/{id}', [AdminUserController::class, 'adminUpdateUser'])->name('adminUpdateUser');
     Route::delete('/delete/user/{id}', [AdminUserController::class, 'adminDeleteUser'])->name('adminDeleteUser');

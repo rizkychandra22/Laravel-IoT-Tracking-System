@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Tracking;
 use Carbon\Carbon;
+use App\Services\GraphService;
+use App\Services\DijkstraService;
+
 
 class TrackingController extends Controller
 {
@@ -20,34 +23,34 @@ class TrackingController extends Controller
         return view('home.riwayat', compact('trackings'));
     }
 
-    public function storeLocation(Request $request) // fungsi untuk menyimpan data lokasi ke cache dan ke DB
+    public function storeLocation(Request $request)
     {
-        if ($request->has(['lat', 'lng', 'device_name'])) {
-            $lat = $request->lat;
-            $lng = $request->lng;
-            $device = $request->device_name;
+        $lat = $request->query('lat');
+        $lng = $request->query('lng');
+        $device = $request->query('device_name');
 
-            // Simpan ke cache (untuk realtime peta)
+        if ($lat && $lng && $device) {
+
             Cache::put('latest_lat', $lat, now()->addMinutes(10));
             Cache::put('latest_lng', $lng, now()->addMinutes(10));
             Cache::put('latest_device', $device, now()->addMinutes(10));
 
-            // Simpan ke database jika terakhir lebih dari 1 jam
             $this->AutoSaveDatabase($device, $lat, $lng);
 
             return response()->json([
-                'device' => $device,
                 'status' => 'success',
-                'message' => 'Koordinat berhasil diproses',
+                'device' => $device,
+                'lat' => $lat,
+                'lng' => $lng,
             ]);
         }
 
         return response()->json([
-            'device' => $request->device_name ?? null,
             'status' => 'error',
-            'message' => 'Parameter lat/lng/device tidak lengkap',
+            'message' => 'Parameter GPS tidak lengkap'
         ], 400);
     }
+
 
     private function AutoSaveDatabase($deviceName, $lat, $lng)  // untuk save ke DB setiap 1 jam
     {
@@ -102,4 +105,32 @@ class TrackingController extends Controller
             })
         ]);
     }
+
+    public function dijkstraRoute()
+    {
+        $graphService = new GraphService();
+        $dijkstra = new DijkstraService();
+
+        $graph = $graphService->getGraph();
+        $coords = $graphService->getCoordinates();
+
+        $start = 'A';
+        $end   = 'D';
+
+        $path = $dijkstra->shortestPath($graph, $start, $end);
+
+        $route = [];
+        foreach ($path as $node) {
+            $route[] = [
+                'lat' => $coords[$node][0],
+                'lng' => $coords[$node][1],
+            ];
+        }
+
+        return response()->json([
+            'path' => $path,
+            'route' => $route
+        ]);
+    }
+
 }

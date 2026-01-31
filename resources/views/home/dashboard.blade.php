@@ -14,53 +14,62 @@
 
 @section('content')
     <h2 class="section-title">@yield('title')</h2>
-    <div class="card">  
+
+    <div class="card">
         <div class="card-header">
-            <h4>Real Time Tracking Position</h4>
+            <h4>Real Time Tracking & Shortest Path (Dijkstra)</h4>
         </div>
+
         <div class="card-body">
-            <div id="map-info-nama" class="mb-2 text-muted">📡 Memuat device yang terhubung...</div>
-            <div id="map-info-lokasi" class="mb-2 text-muted">📍 Memuat koordinat dari alat...</div>
+            <div id="map-info-nama" class="mb-2 text-muted">
+                📡 Memuat device yang terhubung...
+            </div>
+
+            <div id="map-info-lokasi" class="mb-2 text-muted">
+                📍 Memuat koordinat dari alat...
+            </div>
+
             <div id="map" style="width: 100%; height: 500px; border-radius: 10px;"></div>
         </div>
     </div>
 @endsection
 
 @push('scripts')
+    {{-- GOOGLE MAP --}}
     <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-B4NynLW9quhSmUzruZANgkRNskU47nQ&callback=initMap"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-B4NynLW9quhSmUzruZANgkRNskU47nQ"
         async defer>
     </script>
 
     <script>
         let map = null;
         let marker = null;
+        let dijkstraLine = null;
 
         function initMap() {
-            fetchLocation(); // panggil map pertama kali
-            setInterval(fetchLocation, 5000); // refresh map otomatis
+            fetchLocation();
+            fetchDijkstraRoute();
+
+            setInterval(fetchLocation, 5000);      // GPS realtime
+            setInterval(fetchDijkstraRoute, 15000); // Refresh rute
         }
 
+        // ==========================
+        // GPS REALTIME
+        // ==========================
         function fetchLocation() {
-            console.log("⏳ Memuat lokasi dari alat...");
-
             fetch('{{ route('getLocation') }}')
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
-                    console.log("Data dari alat:", data);
+                    if (data.status === "success" && data.lat && data.lng) {
 
-                    const mapContainer = document.getElementById("map");
+                        const pos = {
+                            lat: parseFloat(data.lat),
+                            lng: parseFloat(data.lng)
+                        };
 
-                    if (data.status === "success" && data.device && data.lat && data.lng) {
-                        const lat = parseFloat(data.lat);
-                        const lng = parseFloat(data.lng);
-                        const device_name = data.device;
-                        const pos = { lat, lng };
-
-                        // Jika map belum dibuat
                         if (!map) {
-                            mapContainer.innerHTML = ""; // hapus alert jika ada
-                            map = new google.maps.Map(mapContainer, {
+                            map = new google.maps.Map(document.getElementById("map"), {
                                 zoom: 15,
                                 center: pos
                             });
@@ -68,34 +77,69 @@
                             marker = new google.maps.Marker({
                                 position: pos,
                                 map: map,
-                                title: device_name
+                                title: data.device
                             });
                         } else {
                             marker.setPosition(pos);
-                            marker.setTitle(device_name);
                             map.setCenter(pos);
                         }
 
-                        document.getElementById("map-info-nama").innerText = `📡 Nama Device: ${device_name}`;
-                        document.getElementById("map-info-lokasi").innerText = `📍 Lat: ${lat}, Lng: ${lng}`;
-                    } else {
-                        showError("❌ Data koordinat tidak tersedia.");
+                        document.getElementById("map-info-nama").innerText =
+                            `📡 Nama Device: ${data.device}`;
+
+                        document.getElementById("map-info-lokasi").innerText =
+                            `📍 Lat: ${pos.lat}, Lng: ${pos.lng}`;
                     }
                 })
-                .catch(err => {
-                    console.error("❌ Gagal mengambil data:", err);
-                    showError("❌ Gagal mengambil data dari server.");
-                });
+                .catch(err => console.error("GPS error:", err));
         }
 
-        function showError(message) {
-            const mapContainer = document.getElementById("map");
+        // ==========================
+        // DIJKSTRA ROUTE
+        // ==========================
+        function fetchDijkstraRoute() {
+            fetch('/tracking/dijkstra')
+                .then(res => res.json())
+                .then(data => {
 
-            mapContainer.innerHTML = `
-                <div class="alert alert-warning text-center">
-                    ${message}
-                </div>
-            `;
+                    if (!data.route || data.route.length === 0) return;
+
+                    const routePath = data.route.map(p => ({
+                        lat: parseFloat(p.lat),
+                        lng: parseFloat(p.lng)
+                    }));
+
+                    if (dijkstraLine) {
+                        dijkstraLine.setMap(null);
+                    }
+
+                    dijkstraLine = new google.maps.Polyline({
+                        path: routePath,
+                        geodesic: true,
+                        strokeColor: "#FF0000",
+                        strokeOpacity: 1,
+                        strokeWeight: 4
+                    });
+
+                    dijkstraLine.setMap(map);
+
+                    // Marker START
+                    new google.maps.Marker({
+                        position: routePath[0],
+                        map: map,
+                        label: "A"
+                    });
+
+                    // Marker END
+                    new google.maps.Marker({
+                        position: routePath[routePath.length - 1],
+                        map: map,
+                        label: "B"
+                    });
+                })
+                .catch(err => console.error("Dijkstra error:", err));
         }
+
+        window.onload = initMap;
     </script>
 @endpush
