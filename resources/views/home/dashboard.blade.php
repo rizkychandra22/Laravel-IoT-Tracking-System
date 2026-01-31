@@ -2,144 +2,138 @@
 
 @section('title', 'Home User')
 
-@section('breadcrumb')
-    @php
-        $items = [
-            ['name' => 'Dashboard', 'url' => route('indexAdmin')],
-            ['name' => 'Home', 'url' => ''],
-        ];
-    @endphp
-    @include('components.breadcrumb', ['items' => $items])
-@endsection
-
 @section('content')
-    <h2 class="section-title">@yield('title')</h2>
+<h2 class="section-title">🗺️ Tracking</h2>
 
-    <div class="card">
-        <div class="card-header">
-            <h4>Real Time Tracking & Shortest Path (Dijkstra)</h4>
-        </div>
-
-        <div class="card-body">
-            <div id="map-info-nama" class="mb-2 text-muted">
-                📡 Memuat device yang terhubung...
+<div class="card mb-3">
+    <div class="card-header">
+        <h4>Rute Terpendek</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <label>Titik Awal</label>
+                <select id="startPoint" class="form-control">
+                    <option value="rumah">🏠 Rumah</option>
+                    <option value="kampus_ummi">🎓 Kampus UMMI</option>
+                    <option value="secapa_polri">🪖 Secapa Polri</option>
+                    <option value="cibadak">📍 Cibadak</option>
+                </select>
             </div>
-
-            <div id="map-info-lokasi" class="mb-2 text-muted">
-                📍 Memuat koordinat dari alat...
+            <div class="col-md-4 align-self-end">
+                <button onclick="calculateRoute()" class="btn btn-primary btn-block">
+                    🚗 Cari Rute
+                </button>
             </div>
-
-            <div id="map" style="width: 100%; height: 500px; border-radius: 10px;"></div>
         </div>
     </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div id="map" style="height:500px;border-radius:10px;"></div>
+    </div>
+</div>
 @endsection
 
+@push('styles')
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+@endpush
+
 @push('scripts')
-    {{-- GOOGLE MAP --}}
-    <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-B4NynLW9quhSmUzruZANgkRNskU47nQ"
-        async defer>
-    </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script>
-        let map = null;
-        let marker = null;
-        let dijkstraLine = null;
+<script>
+let map, gpsMarker, startMarker, routeLine;
 
-        function initMap() {
-            fetchLocation();
-            fetchDijkstraRoute();
+// node statis
+const nodes = {
+    rumah: [-6.9083592252156905, 106.89633620913852],
+    kampus_ummi: [-6.9185548295720265, 106.93409279379514],
+    secapa_polri: [-6.911272035193913, 106.92435462263086],
+    cibadak: [-6.890065918562608, 106.78160176597994]
+};
 
-            setInterval(fetchLocation, 5000);      // GPS realtime
-            setInterval(fetchDijkstraRoute, 15000); // Refresh rute
-        }
+// init map
+map = L.map('map').setView(nodes.rumah, 12);
 
-        // ==========================
-        // GPS REALTIME
-        // ==========================
-        function fetchLocation() {
-            fetch('{{ route('getLocation') }}')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "success" && data.lat && data.lng) {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-                        const pos = {
-                            lat: parseFloat(data.lat),
-                            lng: parseFloat(data.lng)
-                        };
+// ambil GPS realtime
+function fetchLocation() {
+    fetch("{{ route('getLocation') }}")
+        .then(res => res.json())
+        .then(data => {
+            if (data.status !== 'success') return;
 
-                        if (!map) {
-                            map = new google.maps.Map(document.getElementById("map"), {
-                                zoom: 15,
-                                center: pos
-                            });
+            const pos = [parseFloat(data.lat), parseFloat(data.lng)];
 
-                            marker = new google.maps.Marker({
-                                position: pos,
-                                map: map,
-                                title: data.device
-                            });
-                        } else {
-                            marker.setPosition(pos);
-                            map.setCenter(pos);
-                        }
+            if (!gpsMarker) {
+                gpsMarker = L.marker(pos).addTo(map).bindPopup("📡 Posisi GPS");
+            } else {
+                gpsMarker.setLatLng(pos);
+            }
+        });
+}
 
-                        document.getElementById("map-info-nama").innerText =
-                            `📡 Nama Device: ${data.device}`;
+setInterval(fetchLocation, 5000);
 
-                        document.getElementById("map-info-lokasi").innerText =
-                            `📍 Lat: ${pos.lat}, Lng: ${pos.lng}`;
-                    }
-                })
-                .catch(err => console.error("GPS error:", err));
-        }
+// tombol cari rute
+function calculateRoute() {
+    const startKey = document.getElementById('startPoint').value;
+    const start = nodes[startKey];
 
-        // ==========================
-        // DIJKSTRA ROUTE
-        // ==========================
-        function fetchDijkstraRoute() {
-            fetch('/tracking/dijkstra')
-                .then(res => res.json())
-                .then(data => {
+    fetch("{{ route('getLocation') }}")
+        .then(res => res.json())
+        .then(data => {
+            const end = [parseFloat(data.lat), parseFloat(data.lng)];
+            drawRoute(start, end);
+        });
+}
 
-                    if (!data.route || data.route.length === 0) return;
+// routing OSRM (jalan asli)
+function drawRoute(start, end) {
 
-                    const routePath = data.route.map(p => ({
-                        lat: parseFloat(p.lat),
-                        lng: parseFloat(p.lng)
-                    }));
+    // hapus rute lama
+    if (routeLine) map.removeLayer(routeLine);
 
-                    if (dijkstraLine) {
-                        dijkstraLine.setMap(null);
-                    }
+    // hapus marker awal lama
+    if (startMarker) map.removeLayer(startMarker);
 
-                    dijkstraLine = new google.maps.Polyline({
-                        path: routePath,
-                        geodesic: true,
-                        strokeColor: "#FF0000",
-                        strokeOpacity: 1,
-                        strokeWeight: 4
-                    });
+    // marker lokasi awal
+    startMarker = L.marker(start, {
+        icon: L.icon({
+            iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32]
+        })
+    }).addTo(map).bindPopup("🚀 Titik Awal");
 
-                    dijkstraLine.setMap(map);
+    // routing OSRM
+    const url = `https://router.project-osrm.org/route/v1/driving/`
+        + `${start[1]},${start[0]};${end[1]},${end[0]}`
+        + `?overview=full&geometries=geojson`;
 
-                    // Marker START
-                    new google.maps.Marker({
-                        position: routePath[0],
-                        map: map,
-                        label: "A"
-                    });
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
 
-                    // Marker END
-                    new google.maps.Marker({
-                        position: routePath[routePath.length - 1],
-                        map: map,
-                        label: "B"
-                    });
-                })
-                .catch(err => console.error("Dijkstra error:", err));
-        }
+            const coords = data.routes[0].geometry.coordinates
+                .map(c => [c[1], c[0]]);
 
-        window.onload = initMap;
-    </script>
+            routeLine = L.polyline(coords, {
+                color: 'red',
+                weight: 5
+            }).addTo(map);
+
+            map.fitBounds(routeLine.getBounds());
+        });
+}
+
+</script>
 @endpush

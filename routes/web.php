@@ -6,53 +6,95 @@ use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| PUBLIC ROUTES
+|--------------------------------------------------------------------------
+*/
 
+// Landing page
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Register page (public)
 Route::get('/register', function () {
     return view('register');
 })->name('register');
-// ========== AUTH ========== //
+
+// ================= AUTH ================= //
 Route::get('/login', [LoginController::class, 'index'])->name('view.login');
 Route::post('/login', [LoginController::class, 'login'])->name('login');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// ========== ADMIN ROUTES ========== //
+/*
+|--------------------------------------------------------------------------
+| TRACKING & API ROUTES (TANPA AUTH)
+|--------------------------------------------------------------------------
+| Digunakan oleh ESP32 & AJAX
+*/
 
-// Halaman admin peta
-Route::get('/dashboard/admin', [TrackingController::class, 'index'])->name('indexAdmin');
-Route::get('/dashboard/admin/last-tracking', [TrackingController::class, 'lastTracking'])->name('lastTracking');
+// ESP32 kirim lokasi
+Route::get('/tracking/update', [TrackingController::class, 'storeLocation'])
+    ->name('tracking.update');
 
-// Endpoint ESP32 untuk update lokasi (tidak perlu pakai session)
-Route::get('/tracking/update', [TrackingController::class, 'storeLocation'])->name('tracking.update');
+// Ambil lokasi terakhir (AJAX map)
+Route::get('/tracking/latest', [TrackingController::class, 'getLocation'])
+    ->name('getLocation');
 
-// AJAX polling (opsional)
-Route::get('/tracking/latest', [TrackingController::class, 'getLocation'])->name('getLocation');
-Route::get('/tracking/json', [TrackingController::class, 'ajaxTrackingJSON'])->name('ajaxTrackingJSON');
+// JSON semua tracking (opsional)
+Route::get('/tracking/json', [TrackingController::class, 'ajaxTrackingJSON'])
+    ->name('ajaxTrackingJSON');
 
-// Algoritma Dijkstra
-Route::get('/tracking/dijkstra', [TrackingController::class, 'dijkstraRoute']);
+// 🔥 ALGORITMA DIJKSTRA (WAJIB TANPA AUTH)
+Route::get('/tracking/dijkstra', [TrackingController::class, 'dijkstraRoute'])
+    ->name('tracking.dijkstra');
 
-// CRUD admin user (butuh auth)
-Route::middleware(['auth', 'userAkses:Admin'])->prefix('dashboard/admin')->group(function () {
-    Route::get('/data/user', [AdminUserController::class, 'adminDataUser'])->name('adminDataUser');
-    Route::get('/create/user', [AdminUserController::class, 'adminCreateUser'])->name('adminCreateUser');
-    Route::get('/register', function () {
-    return view('auth.register');
-})->name('register');
+/*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'userAkses:Admin'])
+    ->prefix('dashboard/admin')
+    ->group(function () {
 
-Route::post('/register', [AdminUserController::class, 'adminStoreUser'])
-    ->name('register.store');
+    // Dashboard admin
+    Route::get('/', [TrackingController::class, 'index'])
+        ->name('indexAdmin');
 
-    Route::get('/edit/user/{id}', [AdminUserController::class, 'adminEditUser'])->name('adminEditUser');
-    Route::post('/update/user/{id}', [AdminUserController::class, 'adminUpdateUser'])->name('adminUpdateUser');
-    Route::delete('/delete/user/{id}', [AdminUserController::class, 'adminDeleteUser'])->name('adminDeleteUser');
+    Route::get('/last-tracking', [TrackingController::class, 'lastTracking'])
+        ->name('lastTracking');
+
+    // CRUD Admin User
+    Route::get('/data/user', [AdminUserController::class, 'adminDataUser'])
+        ->name('adminDataUser');
+
+    Route::get('/create/user', [AdminUserController::class, 'adminCreateUser'])
+        ->name('adminCreateUser');
+
+    Route::post('/register', [AdminUserController::class, 'adminStoreUser'])
+        ->name('register.store');
+
+    Route::get('/edit/user/{id}', [AdminUserController::class, 'adminEditUser'])
+        ->name('adminEditUser');
+
+    Route::post('/update/user/{id}', [AdminUserController::class, 'adminUpdateUser'])
+        ->name('adminUpdateUser');
+
+    Route::delete('/delete/user/{id}', [AdminUserController::class, 'adminDeleteUser'])
+        ->name('adminDeleteUser');
 });
 
-// ========== USER ROUTES ========== //
-Route::middleware(['auth', 'userAkses:User'])->prefix('dashboard/users')->group(function () {
-    Route::get('/', [UserController::class, 'indexUser'])->name('indexUser');
-});
+/*
+|--------------------------------------------------------------------------
+| USER ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'userAkses:User'])
+    ->prefix('dashboard/users')
+    ->group(function () {
 
-// ========== DEFAULT ========== //
-Route::get('/', function () {
-    return view('welcome');
+    Route::get('/', [UserController::class, 'indexUser'])
+        ->name('indexUser');
 });

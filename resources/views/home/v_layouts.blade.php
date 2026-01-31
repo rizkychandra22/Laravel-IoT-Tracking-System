@@ -109,6 +109,10 @@
     {{-- Script JS --}}
     <script src="{{ asset('template-stisla/dist/assets/modules/jquery.min.js') }}"></script>
     <script src="{{ asset('template-stisla/dist/assets/modules/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+    {{-- WAJIB: NICE SCROLL --}}
+    <script src="{{ asset('template-stisla/dist/assets/modules/jquery.nicescroll.min.js') }}"></script>
+
     <script src="{{ asset('template-stisla/dist/assets/js/stisla.js') }}"></script>
     <script src="{{ asset('template-stisla/dist/assets/js/scripts.js') }}"></script>
 
