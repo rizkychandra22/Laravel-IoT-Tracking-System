@@ -6,10 +6,10 @@
     <title>Dashboard &mdash; @yield('title')</title>
 
     {{-- CSS Utama --}}
-    <link rel="stylesheet" href="{{ asset('template-stisla/dist/assets/modules/bootstrap/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('template-stisla/dist/assets/modules/fontawesome/css/all.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('template-stisla/dist/assets/css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('template-stisla/dist/assets/css/components.css') }}">
+    <link rel="stylesheet" href="{{ asset('/template-stisla/dist/assets/modules/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/template-stisla/dist/assets/modules/fontawesome/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/template-stisla/dist/assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('/template-stisla/dist/assets/css/components.css') }}">
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-94034622-3"></script>
 
     {{-- Tambahan jika sidebar mobile perlu di-toggle --}}
@@ -107,14 +107,14 @@
     </div>
 
     {{-- Script JS --}}
-    <script src="{{ asset('template-stisla/dist/assets/modules/jquery.min.js') }}"></script>
-    <script src="{{ asset('template-stisla/dist/assets/modules/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('/template-stisla/dist/assets/modules/jquery.min.js') }}"></script>
+    <script src="{{ asset('/template-stisla/dist/assets/modules/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
     {{-- WAJIB: NICE SCROLL --}}
-    <script src="{{ asset('template-stisla/dist/assets/modules/jquery.nicescroll.min.js') }}"></script>
+    <script src="{{ asset('/template-stisla/dist/assets/modules/jquery.nicescroll.min.js') }}"></script>
 
-    <script src="{{ asset('template-stisla/dist/assets/js/stisla.js') }}"></script>
-    <script src="{{ asset('template-stisla/dist/assets/js/scripts.js') }}"></script>
+    <script src="{{ asset('/template-stisla/dist/assets/js/stisla.js') }}"></script>
+    <script src="{{ asset('/template-stisla/dist/assets/js/scripts.js') }}"></script>
 
     {{-- Toggle Sidebar Script --}}
     <script>
